@@ -4,9 +4,8 @@ from PySide6.QtCore import Qt, Signal
 from typing import Dict, Any
 
 TABLE_COLUMNS = [
-    "Symbol", "LTP (₹)", "Bid Qty", "Ask Qty", "SMMA 20", "SMMA 120",
-    "ETQ 5m", "ETQ 20m", "ETQ 60m", "Avg LTP 20m", "Avg LTP 60m", "LTQ",
-    "Signal", "AI Conf", "Decision"
+    "Symbol", "State", "LTP (₹)", "SMMA 20", "SMMA 120", "Signal", "AI Conf", "Decision",
+    "Bid Qty", "Ask Qty", "ETQ 5m", "ETQ 20m", "ETQ 60m", "Avg LTP 20m", "Avg LTP 60m", "LTQ"
 ]
 
 class StockScreenerTable(QTableWidget):
@@ -63,6 +62,16 @@ class StockScreenerTable(QTableWidget):
         self.row_data_map[row] = data
 
         # Values
+        status = data.get('status', 'INITIALIZING')
+        if status == 'INDICATORS_READY':
+            state_text = 'READY'
+        elif status == 'LIVE_FEATURES_WARMING':
+            state_text = 'WARMING'
+        elif status == 'FULL_FEATURE_SET_READY':
+            state_text = 'FULL'
+        else:
+            state_text = status
+
         ltp = data.get('ltp', 0.0)
         bid_qty = data.get('bid_qty', 0)
         ask_qty = data.get('ask_qty', 0)
@@ -81,20 +90,21 @@ class StockScreenerTable(QTableWidget):
 
         cells = [
             symbol.replace("NSE:", "").replace("-EQ", ""),
+            state_text,
             f"₹{ltp:.2f}",
-            f"{bid_qty:,}",
-            f"{ask_qty:,}",
             f"{smma20:.2f}" if smma20 else "--",
             f"{smma120:.2f}" if smma120 else "--",
+            signal,
+            f"{ai_prob}%" if isinstance(ai_prob, (int, float)) else str(ai_prob),
+            decision,
+            f"{bid_qty:,}",
+            f"{ask_qty:,}",
             f"{etq_5m:,}",
             f"{etq_20m:,}",
             f"{etq_60m:,}",
             f"₹{avg_ltp_20m:.2f}",
             f"₹{avg_ltp_60m:.2f}",
-            f"{ltq:,}",
-            signal,
-            f"{ai_prob}%" if isinstance(ai_prob, (int, float)) else str(ai_prob),
-            decision
+            f"{ltq:,}"
         ]
 
         for col, text in enumerate(cells):
@@ -107,7 +117,15 @@ class StockScreenerTable(QTableWidget):
             else:
                 item.setForeground(QColor("#cdd6f4"))
 
-            if col == 12:  # Signal column
+            if col == 1:  # State column
+                if text == "READY":
+                    item.setForeground(QColor("#a6e3a1"))
+                elif text == "WARMING":
+                    item.setForeground(QColor("#f9e2af"))
+                elif text == "FULL":
+                    item.setForeground(QColor("#89b4fa"))
+
+            if col == 5:  # Signal column
                 if signal == "BUY":
                     item.setForeground(QColor("#a6e3a1"))
                     item.setFont(QFont("Arial", 10, QFont.Bold))
@@ -115,7 +133,7 @@ class StockScreenerTable(QTableWidget):
                     item.setForeground(QColor("#f38ba8"))
                     item.setFont(QFont("Arial", 10, QFont.Bold))
 
-            if col == 14:  # Decision column
+            if col == 7:  # Decision column
                 if decision == "ACCEPT":
                     item.setBackground(QColor("#2e4b38"))
                     item.setForeground(QColor("#a6e3a1"))
@@ -126,6 +144,7 @@ class StockScreenerTable(QTableWidget):
                     item.setFont(QFont("Arial", 10, QFont.Bold))
 
             self.setItem(row, col, item)
+
 
     def _on_selection_changed(self):
         selected_rows = self.selectedIndexes()

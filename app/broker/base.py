@@ -43,5 +43,15 @@ class BrokerInterface(ABC):
     @abstractmethod
     def get_symbol_universe(self) -> List[Dict[str, Any]]:
         """Return list of available NSE Equity instruments."""
-
         pass
+
+    @abstractmethod
+    def get_historical_candles(
+        self,
+        symbol: str,
+        resolution: str = "1",
+        required_candles: int = 300
+    ) -> List[Dict[str, Any]]:
+        """Fetch historical candles normalized to standard dict format."""
+        pass
+

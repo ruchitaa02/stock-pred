@@ -42,9 +42,14 @@ class MainWindow(QMainWindow):
         lbl_title.setFont(QFont("Arial", 14, QFont.Bold))
         lbl_title.setStyleSheet("color: #89b4fa;")
 
-        self.lbl_status = QLabel(f"● Feed Status: Connected ({Config.BROKER})")
+        ready_count = sum(1 for s in tick_processor.stock_states.values() if s.historical_ready)
+        total_count = len(tick_processor.stock_states)
+        warmup_str = f" | Warm-Up: {ready_count}/{total_count} Ready" if total_count > 0 else " | Warm-Up: Completed"
+
+        self.lbl_status = QLabel(f"● Feed Status: Connected ({Config.BROKER}){warmup_str}")
         self.lbl_status.setFont(QFont("Arial", 11))
         self.lbl_status.setStyleSheet("color: #a6e3a1;")
+
 
         self.lbl_signal_count = QLabel("Signals Triggered: 0")
         self.lbl_signal_count.setStyleSheet("color: #f9e2af; font-weight: bold;")
@@ -105,8 +110,9 @@ class MainWindow(QMainWindow):
 
         splitter_screener.addWidget(self.stock_table)
         splitter_screener.addWidget(self.signal_panel)
-        splitter_screener.setSizes([850, 450])
+        splitter_screener.setSizes([950, 410])
         tab1_layout.addWidget(splitter_screener)
+
 
         # Tab 2: Interactive PyQtGraph Charts
         self.chart_widget = InteractiveStockChart()
@@ -131,6 +137,11 @@ class MainWindow(QMainWindow):
         tick_processor.trade_updated.connect(self._on_trade_updated)
 
         self.signal_counter = 0
+
+        # Populate pre-warmed historical stock states into table
+        for symbol, state_dict in tick_processor.latest_states.items():
+            self.stock_table.update_stock(state_dict)
+
 
     def _on_stock_selected(self, stock_data: Dict[str, Any]):
         symbol = stock_data['symbol']

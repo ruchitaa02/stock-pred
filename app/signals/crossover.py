@@ -10,6 +10,15 @@ class CrossoverDetector:
         # Maps symbol -> previous state string: 'ABOVE' (SMMA20 > SMMA120), 'BELOW' (SMMA20 < SMMA120), or None
         self._states: Dict[str, str] = {}
 
+    def set_baseline_relationship(self, symbol: str, relationship: str):
+        """Set initial baseline relationship post historical warm-up without emitting a signal."""
+        if relationship in ("ABOVE", "BELOW", "EQUAL"):
+            self._states[symbol] = relationship
+            logger.info(f"Set baseline crossover state for [{symbol}] -> {relationship}")
+
+    def get_relationship(self, symbol: str) -> Optional[str]:
+        return self._states.get(symbol)
+
     def process_smma(self, symbol: str, smma20: float, smma120: float) -> Optional[str]:
         """
         Process current SMMA values.
@@ -21,14 +30,19 @@ class CrossoverDetector:
         if smma20 is None or smma120 is None:
             return None
 
-        current_state = "ABOVE" if smma20 > smma120 else "BELOW"
+        diff = smma20 - smma120
+        if abs(diff) <= 1e-9:
+            current_state = "EQUAL"
+        else:
+            current_state = "ABOVE" if diff > 0 else "BELOW"
+
         previous_state = self._states.get(symbol)
 
         signal = None
         if previous_state is not None:
-            if previous_state == "BELOW" and current_state == "ABOVE":
+            if previous_state in ("BELOW", "EQUAL") and current_state == "ABOVE":
                 signal = "BUY"
-            elif previous_state == "ABOVE" and current_state == "BELOW":
+            elif previous_state in ("ABOVE", "EQUAL") and current_state == "BELOW":
                 signal = "SELL"
 
         # Update stored state
@@ -38,5 +52,6 @@ class CrossoverDetector:
             logger.info(f"Signal Detected: [{symbol}] -> {signal} (SMMA20: {smma20:.2f}, SMMA120: {smma120:.2f})")
 
         return signal
+
 
 crossover_detector = CrossoverDetector()

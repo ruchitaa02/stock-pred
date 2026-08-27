@@ -1,10 +1,12 @@
 import random
 import time
 import threading
+from datetime import datetime, timedelta
 from typing import List, Dict, Any
 from app.broker.base import BrokerInterface
 from app.utils.time_utils import format_timestamp
 from app.utils.logger import logger
+
 
 DEFAULT_MOCK_STOCKS = [
     {"symbol": "NSE:SUZLON-EQ", "name": "Suzlon Energy Ltd", "base_price": 54.20},
@@ -67,6 +69,49 @@ class MockBrokerClient(BrokerInterface):
 
     def get_symbol_universe(self) -> List[Dict[str, Any]]:
         return DEFAULT_MOCK_STOCKS
+
+    def get_historical_candles(
+        self,
+        symbol: str,
+        resolution: str = "1",
+        required_candles: int = 300
+    ) -> List[Dict[str, Any]]:
+        """
+        Generate synthetic historical 1-minute candles for Mock mode testing.
+        """
+        base_price = self.symbol_prices.get(symbol, 100.0)
+        now = datetime.now()
+        candles = []
+        price = base_price * 0.95
+
+        for i in range(required_candles, 0, -1):
+            dt = now - timedelta(minutes=i)
+            timestamp = dt.strftime("%Y-%m-%d %H:%M")
+
+            change = random.gauss(0.0002, 0.003)
+            open_p = round(price, 2)
+            close_p = round(max(5.0, open_p * (1 + change)), 2)
+            high_p = round(max(open_p, close_p) + random.uniform(0.05, 0.50), 2)
+            low_p = round(max(1.0, min(open_p, close_p) - random.uniform(0.05, 0.50)), 2)
+            volume = random.randint(5000, 50000)
+
+            candles.append({
+                "symbol": symbol,
+                "timestamp": timestamp,
+                "open": open_p,
+                "high": high_p,
+                "low": low_p,
+                "close": close_p,
+                "volume": volume
+            })
+            price = close_p
+
+        if candles:
+            self.symbol_prices[symbol] = candles[-1]["close"]
+
+        logger.info(f"Generated {len(candles)} synthetic historical candles for {symbol} (Mock mode).")
+        return candles
+
 
     def _run_feed(self):
         """Simulates continuous tick stream with prices, LTQ, and depth."""

@@ -42,6 +42,19 @@ class ModelPredictor:
         if threshold is None:
             threshold = Config.AI_DECISION_THRESHOLD
 
+        # If live features are still warming up and live microstructural data is incomplete
+        if features.get('live_ready') is False and features.get('etq_5m', 0) == 0:
+            logger.info("Microstructure live features warming up. Rejecting signal as AVOID.")
+            return {
+                "probability": 0.0,
+                "probability_pct": 0.0,
+                "decision": "AVOID",
+                "threshold_used": threshold,
+                "explanation": "Insufficient live microstructure data (live features warming up).",
+                "supporting_factors": [],
+                "risk_factors": ["Live microstructural windows (ETQ/LTQ) uninitialized at signal time."]
+            }
+
         # Prepare feature vector matching training schema
         df_row = pd.DataFrame([features])[FEATURE_COLUMNS].fillna(0)
 
@@ -63,5 +76,6 @@ class ModelPredictor:
             "supporting_factors": exp["supporting_factors"],
             "risk_factors": exp["risk_factors"]
         }
+
 
 model_predictor = ModelPredictor()

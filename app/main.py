@@ -33,13 +33,17 @@ def main():
     symbol_mgr.load_universe(raw_universe)
     all_symbols = symbol_mgr.get_all_symbols()
 
-    # Connect Broker Tick Callback -> Tick Processor
+    # Stage 1: Historical Warm-Up Pipeline
+    tick_processor.run_historical_warmup(broker, all_symbols)
+
+    # Stage 2: Connect Live Feed
     broker.register_tick_callback(tick_processor.process_tick)
     broker.subscribe(all_symbols)
 
     # Launch PySide6 GUI Dashboard Window
     main_win = MainWindow()
     main_win.show()
+
 
     logger.info(f"Dashboard GUI running with {len(all_symbols)} active symbols.")
     

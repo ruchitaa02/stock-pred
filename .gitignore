@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+env/
+
+# Environment & Secrets
+.env
+*.env
+
+# Logs
+*.log
+logs/
+
+# Data & Cache (large files, auto-generated)
+data/cache/
+data/*.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
