@@ -8,8 +8,13 @@ __pycache__/
 dist/
 build/
 venv/
+venv_win/
 .venv/
 env/
+
+# PyInstaller
+*.spec.bak
+__pycache__/
 
 # Environment & Secrets
 .env
